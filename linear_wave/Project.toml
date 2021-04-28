@@ -1,0 +1,6 @@
+[deps]
+GaussQuadrature = "d54b0c1a-921d-58e0-8e36-89d8069c0969"
+Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
+PGFPlotsX = "8314cec4-20b6-5062-9cdb-752b83310925"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"

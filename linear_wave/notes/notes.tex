@@ -1,0 +1,145 @@
+\documentclass[american]{article}
+
+\usepackage[margin=0.5in,paperwidth=5.8in,paperheight=8.8in]{geometry}
+
+\usepackage{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{csquotes}
+\usepackage{microtype}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+
+\usepackage{mathtools,amsfonts}
+\usepackage{pgfplots}
+\usepackage{hyperref}
+\usepackage[style=numeric]{biblatex}
+\addbibresource{refs.bib}
+
+\usepackage{bm}
+
+\usepackage[draft,layout={inline,index}]{fixme}
+\fxsetup{theme=colorsig}
+\FXRegisterAuthor{jek}{ajek}{JEK}
+
+% This must be the last package loaded
+\usepackage[noabbrev,sort&compress]{cleveref}
+
+\newcommand{\pnt}[1] {\ensuremath{\bm{#1}}}
+\renewcommand{\vec}[1] {\ensuremath{\bm{#1}}}
+\newcommand{\mat}[1] {\ensuremath{#1}}
+\newcommand{\ten}[1] {\ensuremath{\bm{\mathcal{#1}}}}
+\renewcommand{\Re}{{\mathbb{R}}}
+\newcommand{\mnd}[1] {\ensuremath{\hat{#1}}}
+
+\newcommand{\der}  [2]{\frac{d#1}{d#2}}
+\newcommand{\pder} [2]{\frac{\partial#1}{\partial#2}}
+\newcommand{\ppder}[2]{\frac{\partial^2#1}{{\partial#2}^2}}
+\newcommand{\pdder}[3]{\frac{\partial^2#1}{\partial#2\partial#3}}
+\newcommand{\relmiddle}[1]{\mathrel{}\middle#1\mathrel{}}
+
+\author{Jeremy Kozdon}
+\title{Spectrum notes}
+
+\begin{document}
+
+\maketitle
+
+\section{Model}
+Consider the model problem
+\begin{subequations}
+  \begin{alignat}{2}
+    &\pder{u}{t} = \pder{h}{x}, &~~& 0 < x < 1, ~ 0 < t,\\
+    &\pder{h}{t} = \pder{u}{x}, &~~& 0 < x < 1, ~ 0 < t,\\
+    &u(0, t) = 0, &~~& 0 < t,\\
+    &u(1, t) = 0, &~~& 0 < t,
+  \end{alignat}
+\end{subequations}
+
+There is only one zero speed mode this problem,
+\begin{equation}
+  \begin{split}
+    u(x, t) = 0,\\
+    h(x, t) = c,\\
+  \end{split}
+\end{equation}
+where $c$ is an arbitrary constant.
+
+Throughout we assume that $\Omega = (0, 1)$ is partitioned into $K$ elements of
+size $\Delta x = 1 / K$. The edges of the elements are $x_{i} = ih$ for $i = 0,
+1, \dots, K$.
+
+\section{CG-SEM with strong enforcement of boundary conditions}
+We define the spaces
+\begin{equation}
+  \begin{split}
+    V^{N} &= \{
+      v: [0, 1] \rightarrow \mathbb{R}:
+      v \in \mathcal{C}^{(0)}([0, 1]),
+      v|_{x_{i}, x_{i+1}} \in \mathbb{P}^{N}
+    \},\\
+    \bar{V}^{N} &= \{
+      v: [0, 1] \rightarrow \mathbb{R}:
+      v \in V,
+      v(0) = v(1) = 0
+    \}.
+    \end{split}
+\end{equation}
+For the CG solution with strong enforcement of boundary conditions, we seek a
+$\bar{u} \in \bar{V}$ and $h \in V$ such that for all $\bar{\phi} \in \bar{V}$
+and $\psi \in V$:
+\begin{equation}
+  \begin{split}
+    \int_{0}^{1} \bar{\phi} \pder{\bar{u}}{t} = \int_{0}^{1} \bar{\phi} \pder{h}{x},\\
+    \int_{0}^{1} \psi \pder{h}{t} = -\int_{0}^{1} \pder{\psi}{x} \bar{u}.
+  \end{split}
+\end{equation}
+Letting $\mat{W}$ denote the diagonal matrix of LGL quadrature weights on the
+reference element, $\mat{Q}$ the scatter matrix which includes the boundary
+points, $\mat{\bar{Q}}$ the scatter matrix which excludes the boundary points,
+$\mat{D}$ the reference element derivative matrix, and $J = \Delta x / 2$ the
+Jacobian we have the discrete scheme:
+\begin{equation}
+  \begin{split}
+    J \mat{\bar{Q}}^{T} (\mat{I} \otimes \mat{W}) \mat{\bar{Q}} \der{\vec{\bar{u}}}{t}
+    &=
+    \mat{\bar{Q}}^{T} (\mat{I} \otimes \mat{W} \mat{D}) \mat{Q} \vec{h},\\
+    J \mat{Q}^{T} (\mat{I} \otimes \mat{W}) \mat{Q} \der{\vec{h}}{t}
+    &=
+    -\mat{Q}^{T} (\mat{I} \otimes \mat{D}^{T} \mat{W}) \mat{\bar{Q}} \vec{\bar{u}}.
+  \end{split}
+\end{equation}
+This scheme has two zero speed modes.
+
+\section{CG-SEM with weak enforcement of boundary conditions}
+For the CG solution with weak enforcement of boundary conditions, we seek a
+$u \in V$ and $h \in V$ such that for all $\phi \in V$ and $\psi \in V$:
+\begin{equation}
+  \begin{split}
+    \int_{0}^{1} \phi \pder{u}{t} = \int_{0}^{1} \phi \pder{h}{x}
+    - \alpha {\left.\left(\phi u\right)\right|}_{x = 0}
+    - \alpha {\left.\left(\phi u\right)\right|}_{x = 1},\\
+    \int_{0}^{1} \psi \pder{h}{t} = -\int_{0}^{1} \pder{\psi}{x},
+  \end{split}
+\end{equation}
+where $\alpha \ge 0$.
+
+Letting $\vec{l}_{0}^{T}$ and $\vec{l}_{1}^{T}$ be vectors that select the end
+points we have the discrete form
+\begin{equation}
+  \begin{split}
+    J \mat{Q}^{T} (\mat{I} \otimes \mat{W}) \mat{Q} \der{\vec{u}}{t}
+    &=
+    \mat{Q}^{T} (\mat{I} \otimes \mat{W} \mat{D}) \mat{Q} \vec{h}
+    -\vec{l}_{0} \vec{l}_{0}^{T} \vec{u}
+    -\vec{l}_{1} \vec{l}_{1}^{T} \vec{u},\\
+    J \mat{Q}^{T} (\mat{I} \otimes \mat{W}) \mat{Q} \der{\vec{h}}{t}
+    &=
+    -\mat{Q}^{T} (\mat{I} \otimes \mat{D}^{T} \mat{W}) \mat{Q} \vec{u}.
+  \end{split}
+\end{equation}
+for $\alpha = 0$ this has two zero speed modes, and for $\alpha > 0$ it has one
+zero speed mode.
+
+\printbibliography{}
+
+\end{document}
