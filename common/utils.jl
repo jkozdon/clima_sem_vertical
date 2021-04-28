@@ -193,3 +193,67 @@ function scatter_matrix(N, K)
   Js[Nq, 1:K-1] .= Js[1, 2:K]
   Q = sparse(Is, Js[:], ones(Int, length(Is)))
 end
+
+function timestep!(q::NTuple, f!, dt, (t0, t1))
+  T = eltype(q[1])
+
+  RKA = (
+         T(0),
+         T(-567301805773 // 1357537059087),
+         T(-2404267990393 // 2016746695238),
+         T(-3550918686646 // 2091501179385),
+         T(-1275806237668 // 842570457699),
+  )
+
+  RKB = (
+         T(1432997174477 // 9575080441755),
+         T(5161836677717 // 13612068292357),
+         T(1720146321549 // 2090206949498),
+         T(3134564353537 // 4481467310338),
+         T(2277821191437 // 14882151754819),
+  )
+
+  RKC = (
+         T(0),
+         T(1432997174477 // 9575080441755),
+         T(2526269341429 // 6820363962896),
+         T(2006345519317 // 3224310063776),
+         T(2802321613138 // 2924317926251),
+  )
+
+  Δq = ntuple(i->fill!(similar(q[i]), 0), length(q))
+
+  nstep = ceil(Int, (t1 - t0) / dt)
+  dt = (t1 - t0) / nstep
+  for step = 1:nstep
+    t = t0 + (step - 1) * dt
+    for s in 1:length(RKA)
+      f!(Δq, q, t + RKC[s] * dt)
+      for i = 1:length(q)
+        q[i] .+= RKB[s] * dt * Δq[i]
+        Δq[i] .*= RKA[s % length(RKA) + 1]
+      end
+    end
+  end
+
+  nothing
+end
+
+#=
+function ten!(∂q, q, t)
+  # y1 = sin(t)
+  # y2 = exp(-t)
+  # y3 = 0
+  ∂q[1] .+= -q[1] .+ sin(t) .+ cos(t)
+  ∂q[2] .+= -q[2]
+  ∂q[3] .+= -q[3] - q[2] .+ exp(-t) + q[1] .- sin(t)
+end
+dts = 2.0 .^ (0:-1:-8)
+error = zeros(length(dts))
+for (i, dt) = enumerate(dts)
+  q = ([0.0],[1.0], [0.0])
+  timestep!(q, ten!, dt, (0.0, 1.0))
+  error[i] = abs(q[1][1] - sin(1)) + abs(q[2][1] - exp(-1)) + abs(q[3][1])
+end
+rate = (log.(error[1:end-1]) - log.(error[2:end])) ./ (log.(dts[1:end-1]) - log.(dts[2:end]))
+=#
