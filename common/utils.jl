@@ -194,7 +194,7 @@ function scatter_matrix(N, K)
   Q = sparse(Is, Js[:], ones(Int, length(Is)))
 end
 
-function timestep!(q::NTuple, f!, dt, (t0, t1))
+function timestep!(q, f!, dt, (t0, t1))
   T = eltype(q[1])
 
   RKA = (
@@ -222,6 +222,10 @@ function timestep!(q::NTuple, f!, dt, (t0, t1))
   )
 
   Δq = ntuple(i->fill!(similar(q[i]), 0), length(q))
+  Δq_ = ntuple(i->fill!(similar(q[i]), 0), length(q))
+  if q isa NamedTuple
+    Δq_ = NamedTuple{keys(q)}(Δq_)
+  end
 
   nstep = ceil(Int, (t1 - t0) / dt)
   dt = (t1 - t0) / nstep
@@ -234,8 +238,10 @@ function timestep!(q::NTuple, f!, dt, (t0, t1))
     #   end
     # end
     for s in 1:length(RKA)
-      f!(Δq, q, t + RKC[s] * dt)
+      f!(Δq_, q, t + RKC[s] * dt)
       for i = 1:length(q)
+        Δq[i] .+= Δq_[i]
+        Δq_[i] .= 0
         q[i] .+= RKB[s] * dt * Δq[i]
         Δq[i] .*= RKA[s % length(RKA) + 1]
       end
