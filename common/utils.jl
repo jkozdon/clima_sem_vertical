@@ -227,6 +227,12 @@ function timestep!(q::NTuple, f!, dt, (t0, t1))
   dt = (t1 - t0) / nstep
   for step = 1:nstep
     t = t0 + (step - 1) * dt
+    # if mod(step, 1000) == 0
+    #   println((t, t1))
+    #   for i = 1:length(q)
+    #     println((i, extrema(q[i])))
+    #   end
+    # end
     for s in 1:length(RKA)
       f!(Δq, q, t + RKC[s] * dt)
       for i = 1:length(q)
