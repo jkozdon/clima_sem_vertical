@@ -143,14 +143,18 @@ function CG_cutoff_filter_matrix(r, rc)
     @assert Nc < N
 
     # Mass matrix for full space
-    V = GaussQuadrature.orthonormal_poly(r,
-               GaussQuadrature.legendre_coefs(T, N)...)
+    V = GaussQuadrature.orthonormal_poly(
+        r,
+        GaussQuadrature.legendre_coefs(T, N)...,
+    )
     M = I / (V * V')
 
     # Mass matrix for reduced space
     a, b = GaussQuadrature.legendre_coefs(T, Nc)
-    Vc = GaussQuadrature.orthonormal_poly(rc,
-               GaussQuadrature.legendre_coefs(T, Nc)...)
+    Vc = GaussQuadrature.orthonormal_poly(
+        rc,
+        GaussQuadrature.legendre_coefs(T, Nc)...,
+    )
     Mc = I / (Vc * Vc')
 
     # Reduced to full interpolation
@@ -170,85 +174,85 @@ function CG_cutoff_filter_matrix(r, rc)
     # add linear part and project after removing linear part
     P = linc + P * (I - lin)
 end
- 
+
 function dss!(x)
-  x[1, 2:end] .= x[end, 1:end-1] .= (x[1, 2:end] .+ x[end, 1:end-1])
-  x
+    x[1, 2:end] .= x[end, 1:(end - 1)] .= (x[1, 2:end] .+ x[end, 1:(end - 1)])
+    x
 end
 
 function dg_to_cg!(x, M_dg, Q_M_cg)
-  x .= M_dg .* x
-  dss!(x)
-  x .= x ./ Q_M_cg
-  x
+    x .= M_dg .* x
+    dss!(x)
+    x .= x ./ Q_M_cg
+    x
 end
 
 function scatter_matrix(N, K)
-  Nq   = N + 1
-  N_dg = K * Nq
-  Is = 1:N_dg
-  Js = zeros(Int, Nq, K)
-  Js[1:N, :] .= reshape(1:(N*K), N, K)
-  Js[Nq, K] = N * K + 1
-  Js[Nq, 1:K-1] .= Js[1, 2:K]
-  Q = sparse(Is, Js[:], ones(Int, length(Is)))
+    Nq = N + 1
+    N_dg = K * Nq
+    Is = 1:N_dg
+    Js = zeros(Int, Nq, K)
+    Js[1:N, :] .= reshape(1:(N * K), N, K)
+    Js[Nq, K] = N * K + 1
+    Js[Nq, 1:(K - 1)] .= Js[1, 2:K]
+    Q = sparse(Is, Js[:], ones(Int, length(Is)))
 end
 
 function timestep!(q, f!, dt, (t0, t1))
-  T = eltype(q[1])
+    T = eltype(q[1])
 
-  RKA = (
-         T(0),
-         T(-567301805773 // 1357537059087),
-         T(-2404267990393 // 2016746695238),
-         T(-3550918686646 // 2091501179385),
-         T(-1275806237668 // 842570457699),
-  )
+    RKA = (
+        T(0),
+        T(-567301805773 // 1357537059087),
+        T(-2404267990393 // 2016746695238),
+        T(-3550918686646 // 2091501179385),
+        T(-1275806237668 // 842570457699),
+    )
 
-  RKB = (
-         T(1432997174477 // 9575080441755),
-         T(5161836677717 // 13612068292357),
-         T(1720146321549 // 2090206949498),
-         T(3134564353537 // 4481467310338),
-         T(2277821191437 // 14882151754819),
-  )
+    RKB = (
+        T(1432997174477 // 9575080441755),
+        T(5161836677717 // 13612068292357),
+        T(1720146321549 // 2090206949498),
+        T(3134564353537 // 4481467310338),
+        T(2277821191437 // 14882151754819),
+    )
 
-  RKC = (
-         T(0),
-         T(1432997174477 // 9575080441755),
-         T(2526269341429 // 6820363962896),
-         T(2006345519317 // 3224310063776),
-         T(2802321613138 // 2924317926251),
-  )
+    RKC = (
+        T(0),
+        T(1432997174477 // 9575080441755),
+        T(2526269341429 // 6820363962896),
+        T(2006345519317 // 3224310063776),
+        T(2802321613138 // 2924317926251),
+    )
 
-  Δq = ntuple(i->fill!(similar(q[i]), 0), length(q))
-  Δq_ = ntuple(i->fill!(similar(q[i]), 0), length(q))
-  if q isa NamedTuple
-    Δq_ = NamedTuple{keys(q)}(Δq_)
-  end
-
-  nstep = ceil(Int, (t1 - t0) / dt)
-  dt = (t1 - t0) / nstep
-  for step = 1:nstep
-    t = t0 + (step - 1) * dt
-    # if mod(step, 1000) == 0
-    #   println((t, t1))
-    #   for i = 1:length(q)
-    #     println((i, extrema(q[i])))
-    #   end
-    # end
-    for s in 1:length(RKA)
-      f!(Δq_, q, t + RKC[s] * dt)
-      for i = 1:length(q)
-        Δq[i] .+= Δq_[i]
-        Δq_[i] .= 0
-        q[i] .+= RKB[s] * dt * Δq[i]
-        Δq[i] .*= RKA[s % length(RKA) + 1]
-      end
+    Δq = ntuple(i -> fill!(similar(q[i]), 0), length(q))
+    Δq_ = ntuple(i -> fill!(similar(q[i]), 0), length(q))
+    if q isa NamedTuple
+        Δq_ = NamedTuple{keys(q)}(Δq_)
     end
-  end
 
-  nothing
+    nstep = ceil(Int, (t1 - t0) / dt)
+    dt = (t1 - t0) / nstep
+    for step in 1:nstep
+        t = t0 + (step - 1) * dt
+        # if mod(step, 1000) == 0
+        #   println((t, t1))
+        #   for i = 1:length(q)
+        #     println((i, extrema(q[i])))
+        #   end
+        # end
+        for s in 1:length(RKA)
+            f!(Δq_, q, t + RKC[s] * dt)
+            for i in 1:length(q)
+                Δq[i] .+= Δq_[i]
+                Δq_[i] .= 0
+                q[i] .+= RKB[s] * dt * Δq[i]
+                Δq[i] .*= RKA[s % length(RKA) + 1]
+            end
+        end
+    end
+
+    nothing
 end
 
 #=
