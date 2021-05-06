@@ -255,6 +255,58 @@ function timestep!(q, f!, dt, (t0, t1))
     nothing
 end
 
+function timestep!(q::AbstractArray, f!, dt, (t0, t1))
+    T = eltype(q[1])
+
+    RKA = (
+        T(0),
+        T(-567301805773 // 1357537059087),
+        T(-2404267990393 // 2016746695238),
+        T(-3550918686646 // 2091501179385),
+        T(-1275806237668 // 842570457699),
+    )
+
+    RKB = (
+        T(1432997174477 // 9575080441755),
+        T(5161836677717 // 13612068292357),
+        T(1720146321549 // 2090206949498),
+        T(3134564353537 // 4481467310338),
+        T(2277821191437 // 14882151754819),
+    )
+
+    RKC = (
+        T(0),
+        T(1432997174477 // 9575080441755),
+        T(2526269341429 // 6820363962896),
+        T(2006345519317 // 3224310063776),
+        T(2802321613138 // 2924317926251),
+    )
+
+    Δq = fill!(similar(q), 0)
+    Δq_ = fill!(similar(q), 0)
+
+    nstep = ceil(Int, (t1 - t0) / dt)
+    dt = (t1 - t0) / nstep
+    for step in 1:nstep
+        t = t0 + (step - 1) * dt
+        # if mod(step, 1000) == 0
+        #   println((t, t1))
+        #   for i = 1:length(q)
+        #     println((i, extrema(q[i])))
+        #   end
+        # end
+        for s in 1:length(RKA)
+            f!(Δq_, q, t + RKC[s] * dt)
+            Δq .+= Δq_
+            Δq_ .= 0
+            q .+= RKB[s] * dt * Δq
+            Δq .*= RKA[s % length(RKA) + 1]
+        end
+    end
+
+    nothing
+end
+
 #=
 function ten!(∂q, q, t)
   # y1 = sin(t)
